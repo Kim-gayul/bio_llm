@@ -1,0 +1,23 @@
+# Local configuration, credentials and generated data
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+*.py[cod]
+backend/db.sqlite3*
+pmc_xml_data/
+pmc_processed_data/
+chroma_db_hf/
+chroma_db_v2/
+*.ipynb
+# Frontend build and dependencies
+frontend/node_modules/
+frontend/.next/
+*.tsbuildinfo
+frontend/.env*
+# Generated media other than the reviewed public video
+promo/output/*
+!promo/output/BioLab-promo-30s-1080p.mp4
+!promo/output/biolab-poster.jpg
+!promo/output/biolab-ko.srt

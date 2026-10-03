@@ -1,0 +1,7 @@
+-r backend/requirements.txt
+chromadb>=1.5,<2
+sentence-transformers>=5,<7
+beautifulsoup4>=4.13,<5
+lxml>=5.3,<7
+langchain-text-splitters>=1,<2
+biopython>=1.85,<2
