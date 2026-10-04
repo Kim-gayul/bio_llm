@@ -17,7 +17,7 @@
 - 논문 라이브러리 검색과 원문 Methods 열람
 - OpenAI 키 설정 상태와 Chroma 인덱스 상태 표시
 
-브라우저 → Next.js → Django → OpenAI 검색문 정리 → 로컬 BGE/Chroma 검색 → OpenAI 답변 생성 순서로 동작합니다. 코드 저장소만 공개하면 다른 사람이 사용할 서버가 자동 생성되지는 않습니다.
+브라우저 → Next.js → Django → OpenAI 검색문 정리 → 로컬 BGE/Chroma 검색 → OpenAI 답변 생성 순서로 동작합니다. 코드 저장소만 공개/사용할 서버가 자동 생성되지는 않습니다.
 
 ## 먼저 알아둘 점
 
@@ -41,7 +41,7 @@ npm.cmd ci
 cd ..
 ```
 
-`.env`에 **본인의** `NCBI_EMAIL`과 `OPENAI_API_KEY`를 입력하세요. `NCBI_API_KEY`는 선택 사항이며 E-utilities 논문 검색에만 사용됩니다. 실제 비밀값은 Git에 올리지 마세요.
+`.env`에 **본인의** `NCBI_EMAIL`과 `OPENAI_API_KEY`를 입력하세요. `NCBI_API_KEY`는 선택 사항이며 E-utilities 논문 검색에만 사용됩니다. 
 
 `.env`의 모델 설정 기본값은 아래와 같습니다. `.env`를 바꾸면 Django를 재시작하세요.
 
