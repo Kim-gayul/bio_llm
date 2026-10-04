@@ -17,6 +17,6 @@ OPENAI_QUERY_MAX_OUTPUT_TOKENS = int(os.getenv("OPENAI_QUERY_MAX_OUTPUT_TOKENS",
 if min(OPENAI_MAX_OUTPUT_TOKENS, OPENAI_QUERY_MAX_OUTPUT_TOKENS) < 1:
     raise ValueError("OpenAI output token limits must be positive.")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5")
-CHROMA_PATH = ROOT / os.getenv("CHROMA_PATH", "chroma_db_v2")
-COLLECTION = os.getenv("CHROMA_COLLECTION", "biolab_methods_v2")
+CHROMA_PATH = ROOT / os.getenv("CHROMA_PATH", "chroma_db_v4")
+COLLECTION = os.getenv("CHROMA_COLLECTION", "biolab_methods_v4")
 PROCESSED_PATH = ROOT / "pmc_processed_data"

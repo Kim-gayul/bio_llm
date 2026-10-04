@@ -1,4 +1,4 @@
-"""Build the v2 index with ``python -m biolab.index``; preserve the original DB."""
+"""Build the configured index with ``python -m biolab.index``; preserve the original DB."""
 import argparse
 from biolab.config import EMBEDDING_MODEL
 

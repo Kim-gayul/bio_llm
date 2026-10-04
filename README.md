@@ -43,7 +43,7 @@ cd ..
 
 `.env`에 **본인의** `NCBI_EMAIL`과 `OPENAI_API_KEY`를 입력하세요. `NCBI_API_KEY`는 선택 사항이며 E-utilities 논문 검색에만 사용됩니다. 
 
-`.env`의 모델 설정 기본값은 아래와 같습니다. `.env`를 바꾸면 Django를 재시작하세요.
+`.env`의 모델·인덱스 설정 기본값은 아래와 같습니다. `.env`를 바꾸면 Django를 재시작하세요.
 
 ```dotenv
 OPENAI_API_KEY=
@@ -53,9 +53,13 @@ OPENAI_REASONING_EFFORT=low
 OPENAI_QUERY_REASONING_EFFORT=none
 OPENAI_MAX_OUTPUT_TOKENS=4096
 OPENAI_QUERY_MAX_OUTPUT_TOKENS=512
+CHROMA_PATH=chroma_db_v4
+CHROMA_COLLECTION=biolab_methods_v4
 ```
 
 화면의 OpenAI 상태는 **키 설정 여부**입니다. 실제 키·모델 접근 권한은 답변 요청에서 확인됩니다. Luna에 접근할 수 없다면 `OPENAI_QUERY_MODEL=gpt-6-astra`, `OPENAI_QUERY_REASONING_EFFORT=low`로 설정하세요.
+
+Windows에서는 프로젝트와 Chroma 인덱스를 영문 경로에 두세요. 한글 경로에서는 HNSW 인덱스가 저장 후 다시 열리지 않을 수 있습니다. 기본 `CHROMA_PATH=chroma_db_v4`는 프로젝트 내부 경로입니다.
 
 다른 터미널에서 PMC 검색 결과를 공식 OAI-PMH 전문 제공 API로 가져오고, Methods를 인덱싱합니다.
 

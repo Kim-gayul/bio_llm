@@ -10,6 +10,7 @@ pmc_xml_data/
 pmc_processed_data/
 chroma_db_hf/
 chroma_db_v2/
+chroma_db_v4/
 *.ipynb
 # Frontend build and dependencies
 frontend/node_modules/
