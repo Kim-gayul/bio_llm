@@ -2,8 +2,8 @@ import json
 import logging
 import re
 import threading
+from time import perf_counter
 
-import requests
 from django.db import close_old_connections
 from django.http import JsonResponse, StreamingHttpResponse
 from django.middleware.csrf import get_token
@@ -11,12 +11,12 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_http_methods, require_GET
 
 from biolab import rag
-from biolab.config import OLLAMA_MODEL, OLLAMA_URL
+from biolab.config import OPENAI_API_KEY, OPENAI_MODEL
 from biolab.papers import load_papers, paper_summary
 from .models import Conversation, Message
 
 logger = logging.getLogger(__name__)
-# One local model generation at a time; run one backend worker for local deployment.
+# One generation at a time; run one backend worker for this personal deployment.
 generation_lock = threading.Lock()
 
 
@@ -58,16 +58,9 @@ def session(request):
 
 @require_GET
 def health(request):
-    result = {"model": OLLAMA_MODEL, "ollama": False, "index": False, "chunks": 0}
-    try:
-        with requests.Session() as client:
-            client.trust_env = False
-            response = client.get(f"{OLLAMA_URL}/api/tags", timeout=2)
-            response.raise_for_status()
-            names = [m["name"] for m in response.json().get("models", [])]
-            result["ollama"] = OLLAMA_MODEL in names or OLLAMA_MODEL + ":latest" in names
-    except (requests.RequestException, ValueError, KeyError):
-        pass
+    # Configuration status only: no paid request and no API key in the response.
+    result = {"model": OPENAI_MODEL, "openai_configured": bool(OPENAI_API_KEY),
+              "index": False, "chunks": 0}
     try:
         result["chunks"] = rag.collection().count()
         result["index"] = result["chunks"] > 0
@@ -152,13 +145,21 @@ def chat(request, pk):
     def stream():
         chunks, sources = [], []
         status = "failed"
+        started = perf_counter()
+        timings = {}
         try:
             yield event("status", message="질문을 정리하고 논문 근거를 찾고 있어요.")
-            sources = rag.retrieve(question, history, top_k, pmcid)
+            sources = rag.retrieve(question, history, top_k, pmcid, timings=timings)
+            timings["retrieval_ms"] = round((perf_counter() - started) * 1000, 1)
             yield event("sources", sources=sources)
+            answer_started = perf_counter()
             for token in rag.answer(question, history, sources):
+                if not chunks:
+                    timings["first_text_ms"] = round((perf_counter() - started) * 1000, 1)
+                    timings["answer_first_text_ms"] = round((perf_counter() - answer_started) * 1000, 1)
                 chunks.append(token)
                 yield event("token", text=token)
+            timings["answer_ms"] = round((perf_counter() - answer_started) * 1000, 1)
             content = "".join(chunks)
             if not content.strip():
                 raise RuntimeError("Empty model answer")
@@ -166,12 +167,14 @@ def chat(request, pk):
             assistant.content, assistant.sources, assistant.status = content, sources, "complete"
             assistant.save(update_fields=["content", "sources", "status"])
             status = "complete"
-            yield event("done", message_id=assistant.id, warnings=warnings)
+            timings["total_ms"] = round((perf_counter() - started) * 1000, 1)
+            yield event("done", message_id=assistant.id, warnings=warnings, timings=timings)
         except GeneratorExit:
             raise
-        except Exception:
-            logger.exception("Local RAG generation failed")
-            yield event("error", message="답변 생성에 실패했습니다. Ollama 모델, 임베딩 캐시, 인덱스 설정을 확인해 주세요.")
+        except Exception as exc:
+            # Provider error bodies can contain credential fragments; log only the type.
+            logger.error("RAG generation failed (%s)", type(exc).__name__)
+            yield event("error", message="답변 생성에 실패했습니다. OpenAI API 키·모델 접근 권한·사용 한도와 임베딩 캐시·인덱스를 확인해 주세요.")
         finally:
             try:
                 if status != "complete":

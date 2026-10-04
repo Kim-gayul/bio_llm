@@ -1,6 +1,6 @@
 # BioLab · 나의 첫 연구 파트너
 
-분자생물학 석사 신입생을 위한 논문 기반 AI 연구 도우미입니다. PubMed Central의 논문 Methods를 검색하고, 출처를 표시하며 한국어로 설명합니다. **임베딩과 LLM 추론은 사용자의 컴퓨터에서 실행**합니다.
+분자생물학 석사 신입생을 위한 논문 기반 AI 연구 도우미입니다. PubMed Central의 논문 Methods를 검색하고, 출처를 표시하며 한국어로 설명합니다. **임베딩과 Chroma 검색은 로컬에서, 검색문 정리와 답변 생성은 OpenAI API에서 실행**합니다.
 
 ## 30초 소개 영상
 
@@ -15,9 +15,9 @@
 - 토큰 단위 스트리밍, PMCID 출처 표시, 논문 원문 링크
 - 세션별 대화 저장·삭제·Markdown 내보내기
 - 논문 라이브러리 검색과 원문 Methods 열람
-- 로컬 Ollama와 Chroma 인덱스 상태 표시
+- OpenAI 키 설정 상태와 Chroma 인덱스 상태 표시
 
-브라우저 → Next.js → Django → 로컬 BGE/Chroma 검색 → 로컬 Ollama 생성 순서로 동작합니다. 코드 저장소만 공개하면 다른 사람이 사용할 서버가 자동 생성되지는 않습니다.
+브라우저 → Next.js → Django → OpenAI 검색문 정리 → 로컬 BGE/Chroma 검색 → OpenAI 답변 생성 순서로 동작합니다. 코드 저장소만 공개하면 다른 사람이 사용할 서버가 자동 생성되지는 않습니다.
 
 ## 먼저 알아둘 점
 
@@ -27,7 +27,7 @@
 
 ## 설치
 
-Python 3.11~3.13, Node.js 20.9 이상, Ollama가 필요합니다. 예시는 Windows PowerShell이며 프로젝트 루트에서 실행합니다.
+Python 3.11~3.13, Node.js 20.9 이상, OpenAI API 키가 필요합니다. 예시는 Windows PowerShell이며 프로젝트 루트에서 실행합니다. OpenAI 호출에는 사용량에 따른 요금이 발생하고, 질문·최근 대화·검색된 논문 발췌가 OpenAI로 전송됩니다.
 
 ```powershell
 # Python 가상환경이 없다면 생성
@@ -41,15 +41,21 @@ npm.cmd ci
 cd ..
 ```
 
-`.env`에 **본인의** `NCBI_EMAIL`을 입력하세요. API 키는 선택 사항입니다. 실제 비밀값은 Git에 올리지 마세요.
+`.env`에 **본인의** `NCBI_EMAIL`과 `OPENAI_API_KEY`를 입력하세요. `NCBI_API_KEY`는 선택 사항이며 E-utilities 논문 검색에만 사용됩니다. 실제 비밀값은 Git에 올리지 마세요.
 
-Ollama를 실행하고 기본 모델을 준비합니다. 모델 크기와 실행 속도는 컴퓨터 사양에 따라 다릅니다.
+`.env`의 모델 설정 기본값은 아래와 같습니다. `.env`를 바꾸면 Django를 재시작하세요.
 
-```powershell
-ollama pull lancard/korean-yanolja-eeve
-# Ollama 앱이 이미 실행 중이면 다음 명령은 생략
-ollama serve
+```dotenv
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-6-astra
+OPENAI_QUERY_MODEL=gpt-6-luna
+OPENAI_REASONING_EFFORT=low
+OPENAI_QUERY_REASONING_EFFORT=none
+OPENAI_MAX_OUTPUT_TOKENS=4096
+OPENAI_QUERY_MAX_OUTPUT_TOKENS=512
 ```
+
+화면의 OpenAI 상태는 **키 설정 여부**입니다. 실제 키·모델 접근 권한은 답변 요청에서 확인됩니다. Luna에 접근할 수 없다면 `OPENAI_QUERY_MODEL=gpt-6-astra`, `OPENAI_QUERY_REASONING_EFFORT=low`로 설정하세요.
 
 다른 터미널에서 PMC 검색 결과를 공식 OAI-PMH 전문 제공 API로 가져오고, Methods를 인덱싱합니다.
 
@@ -88,7 +94,9 @@ npm.cmd run typecheck
 npm.cmd run build
 ```
 
-실제 논문을 수집해 인덱스를 만든 뒤 두 서버가 실행 중이면 루트에서 `scripts/smoke_test.py --live`로 로컬 Ollama까지 연결을 확인할 수 있습니다.
+실제 논문을 수집해 인덱스를 만든 뒤 두 서버가 실행 중이면 루트에서 `scripts/smoke_test.py --live`로 OpenAI 답변까지 확인할 수 있습니다. 이 옵션은 유료 API를 호출합니다.
+
+반복 질문은 검색문·질문 임베딩을 최대 256개까지 메모리에 캐시합니다. 답변은 캐시하지 않으며, 첫 임베딩 모델 로딩은 검색문 정리와 동시에 시작합니다. 답변 완료 후 브라우저 개발자 도구 Console의 `BioLab timing (ms)`에서 검색 준비·첫 답변 텍스트·전체 소요 시간을 볼 수 있습니다. 출력 한도에 도달해 중단된 답변은 성공으로 저장하지 않습니다.
 
 ## 구조
 
@@ -98,7 +106,7 @@ npm.cmd run build
 | `backend/` | Django API와 세션별 대화 기록 |
 | `biolab/collect.py` | PMC 검색과 OAI-PMH 전문 수집 |
 | `biolab/preprocess.py` | Methods 정제 및 청킹 |
-| `biolab/index.py`, `biolab/rag.py` | Chroma 임베딩·검색·로컬 생성 |
+| `biolab/index.py`, `biolab/rag.py` | Chroma 임베딩·검색·OpenAI 생성 |
 | `promo/` | 공개용 연출 영상과 재생성 소스 |
 
 ### 데이터 출처와 이용 조건

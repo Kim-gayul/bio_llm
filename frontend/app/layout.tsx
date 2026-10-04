@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "BioLab · 나의 첫 연구 파트너",
-  description: "분자생물학 석사 신입생을 위한 논문 근거 기반 로컬 AI 연구 공간",
+  description: "분자생물학 석사 신입생을 위한 논문 근거 기반 OpenAI 연구 공간",
 };
 
 export default function RootLayout({

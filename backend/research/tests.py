@@ -84,7 +84,7 @@ class APITests(TestCase):
 
     @patch("research.views.rag.retrieve", return_value=[])
     def test_empty_context_does_not_call_model(self, retrieve):
-        with patch("biolab.rag.ollama") as llm:
+        with patch("biolab.rag.generate") as llm:
             packets = self.packets(self.post(self.url, {"question": "question"}))
         llm.assert_not_called()
         self.assertIn("찾을 수 없습니다", packets[2]["text"])

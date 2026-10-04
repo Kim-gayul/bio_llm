@@ -51,11 +51,12 @@ type Paper = {
 };
 type Health = {
   model: string;
-  ollama: boolean;
+  openai_configured: boolean;
   index: boolean;
   chunks: number;
 };
 type StreamEvent = {
+  timings?: Record<string, number>;
   type: string;
   text?: string;
   message?: string;
@@ -233,10 +234,12 @@ export default function Workspace() {
         completed = false;
       function consume(packet: StreamEvent) {
         if (packet.type === "status") setStatus(packet.message || "");
+        if (packet.type === "sources") setStatus("논문 근거를 찾았어요. 답변을 작성하고 있어요.");
         if (packet.type === "error") throw new Error(packet.message);
         if (packet.type === "done") {
           completed = true;
           setStatus("");
+          if (packet.timings) console.info("BioLab timing (ms)", packet.timings);
         }
         if (["token", "sources", "done"].includes(packet.type)) {
           if (packet.type === "token") setStatus("");
@@ -337,7 +340,7 @@ export default function Workspace() {
     }
   }
 
-  const ready = health?.ollama && health?.index;
+  const ready = health?.openai_configured && health?.index;
   const filtered = papers.filter((p) =>
     `${p.title} ${p.pmcid} ${p.abstract}`
       .toLowerCase()
@@ -422,7 +425,7 @@ export default function Workspace() {
           <ShieldCheck size={20} />
           <strong>연구는 나의 공간에서</strong>
           <p>
-            질문과 AI 추론은 로컬에서.
+            논문 검색은 로컬에서, AI 답변은 OpenAI로.
             <br />
             연구 대화는 내 컴퓨터에 저장돼요.
           </p>
@@ -463,7 +466,7 @@ export default function Workspace() {
             title="클릭하여 연결 상태 새로고침"
           >
             <i />
-            {ready ? "로컬 AI 연결됨" : "연결 상태 확인"}
+            {ready ? "AI 사용 준비됨" : "연결 상태 확인"}
           </button>
         </header>
         {error && (
@@ -506,7 +509,7 @@ export default function Workspace() {
                       </span>
                       <span>
                         <ShieldCheck size={14} />
-                        로컬 AI
+                        OpenAI
                       </span>
                       <span>
                         <Check size={14} />
@@ -775,9 +778,9 @@ export default function Workspace() {
               <div className="model-status">
                 <div>
                   <span
-                    className={health?.ollama ? "status-dot ok" : "status-dot"}
+                    className={health?.openai_configured ? "status-dot ok" : "status-dot"}
                   />
-                  Ollama 모델<span>{health?.ollama ? "연결됨" : "미연결"}</span>
+                  OpenAI 설정<span>{health?.openai_configured ? "설정됨" : "키 필요"}</span>
                 </div>
                 <div>
                   <span
@@ -794,7 +797,7 @@ export default function Workspace() {
                     <summary>시작 안내</summary>
                     <p>
                       README 순서대로 모델을 준비하고 인덱스를 구축하세요.
-                      Ollama와 Django를 실행한 뒤 상단 연결 상태를 눌러 주세요.
+                      .env에 OpenAI 키와 모델을 입력한 뒤 Django를 재시작하세요.
                     </p>
                   </details>
                 )}

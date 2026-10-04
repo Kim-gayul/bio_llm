@@ -1,4 +1,4 @@
-"""Verify the running Next.js -> Django proxy; --live additionally calls local Ollama."""
+"""Verify the running Next.js -> Django proxy; --live additionally calls the paid OpenAI API."""
 import argparse
 import json
 import requests
@@ -31,7 +31,7 @@ def main():
         try:
             assert client.get(url, timeout=10).json()["messages"] == []
             if args.live:
-                assert health["ollama"] and health["index"], "Prepare model and index before --live"
+                assert health["openai_configured"] and health["index"], "Prepare model and index before --live"
                 with client.post(url + "messages/", json={"question": "검색된 논문이 다루는 연구 목적과 Methods의 실험 종류만 간단히 설명해 주세요.", "top_k": 2}, stream=True, timeout=(10, 300)) as response:
                     response.raise_for_status()
                     events = [json.loads(line) for line in response.iter_lines() if line]
